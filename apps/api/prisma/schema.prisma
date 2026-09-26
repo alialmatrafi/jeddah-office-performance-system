@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SUPERVISOR
+  PROCESSOR
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DistributorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id              String         @id @default(cuid())
+  name            String
+  username        String         @unique
+  passwordHash    String
+  role            UserRole
+  status          UserStatus     @default(ACTIVE)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  dailyWorks      DailyWork[]    @relation("ProcessorDailyWork")
+  processorReturns Return[]       @relation("ProcessorReturns")
+  auditLogs       AuditLog[]
+}
+
+model Distributor {
+  id              String            @id @default(cuid())
+  name            String            @unique
+  status          DistributorStatus @default(ACTIVE)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  shipmentEntries ShipmentEntry[]
+  returns         Return[]
+}
+
+model District {
+  id              String          @id @default(cuid())
+  name            String          @unique
+  shipmentEntries ShipmentEntry[]
+}
+
+model DailyWork {
+  id              String          @id @default(cuid())
+  processorId     String
+  workDate        DateTime          @db.Date
+  excellentMail   Int             @default(0)
+  officialMail    Int             @default(0)
+  registeredMail  Int             @default(0)
+  governmentDocs  Int             @default(0)
+  parcels         Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  processor       User            @relation("ProcessorDailyWork", fields: [processorId], references: [id])
+  shipmentEntries ShipmentEntry[]
+
+  @@unique([processorId, workDate], name: "processor_workDate")
+  @@index([workDate])
+}
+
+model ShipmentEntry {
+  id           String      @id @default(cuid())
+  dailyWorkId  String
+  distributorId String
+  districtId   String
+  entryCount   Int
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  dailyWork    DailyWork   @relation(fields: [dailyWorkId], references: [id], onDelete: Cascade)
+  distributor  Distributor @relation(fields: [distributorId], references: [id])
+  district     District    @relation(fields: [districtId], references: [id])
+
+  @@unique([dailyWorkId, distributorId, districtId])
+  @@index([districtId])
+  @@index([distributorId])
+}
+
+model Return {
+  id                       String      @id @default(cuid())
+  distributorId            String
+  processorId              String
+  quantity                 Int
+  supervisorReceivedQuantity Int
+  officeReissueQuantity    Int
+  note                     String?
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+  distributor              Distributor @relation(fields: [distributorId], references: [id])
+  processor                User        @relation("ProcessorReturns", fields: [processorId], references: [id])
+
+  @@index([processorId, createdAt])
+  @@index([distributorId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([userId])
+}
