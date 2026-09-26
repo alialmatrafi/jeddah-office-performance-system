@@ -15,7 +15,9 @@
     "test": "vitest run",
     "db:generate": "npm run db:generate -w @jeddah/api",
     "db:migrate": "npm run db:migrate -w @jeddah/api",
-    "db:seed": "npm run db:seed -w @jeddah/api"
+    "db:deploy": "npm run db:deploy -w @jeddah/api",
+    "db:seed": "npm run db:seed -w @jeddah/api",
+    "db:seed:prod": "npm run db:seed:prod -w @jeddah/api"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

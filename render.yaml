@@ -1,0 +1,66 @@
+# Render Blueprint for the Jeddah Office Performance System.
+# A single web service serves both the API and the built web client on one
+# origin, so the browser never makes a cross-origin request and no build-time
+# API URL is required.
+#
+# After the first deploy, set CLIENT_ORIGIN to the service URL and replace the
+# seed names and passwords, then run the seed once:
+#   npm run db:seed:prod
+#
+# Free plans are used below so you can try it. Note the limits: a free web
+# service sleeps after 15 minutes of inactivity, and a free Postgres database
+# is deleted after 30 days. Switch both to "starter" for real use.
+services:
+  - type: web
+    name: jeddah-office-performance-system
+    runtime: node
+    plan: free
+    region: frankfurt
+    # devDependencies are required here because Vite, Prisma CLI and tsc are
+    # build-time tools, so --include=dev is mandatory.
+    buildCommand: npm ci --include=dev && npx prisma generate --schema apps/api/prisma/schema.prisma && npm run build
+    startCommand: npx prisma migrate deploy --schema apps/api/prisma/schema.prisma && node apps/api/dist/src/server.js
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: NODE_VERSION
+        value: 24.13.0
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_WEB
+        value: 'true'
+      # Replace with the deployed URL, e.g. https://jeddah-office.onrender.com
+      - key: CLIENT_ORIGIN
+        value: https://jeddah-office-performance-system.onrender.com
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jeddah-office-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SEED_ADMIN_NAME
+        value: System Administrator
+      - key: SEED_ADMIN_USERNAME
+        value: admin
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: SEED_SUPERVISOR_NAME
+        value: Office Supervisor
+      - key: SEED_SUPERVISOR_USERNAME
+        value: supervisor
+      - key: SEED_SUPERVISOR_PASSWORD
+        sync: false
+      - key: SEED_PROCESSOR_NAME
+        value: Processor
+      - key: SEED_PROCESSOR_USERNAME
+        value: processor
+      - key: SEED_PROCESSOR_PASSWORD
+        sync: false
+
+databases:
+  - name: jeddah-office-db
+    plan: free
+    region: frankfurt
+    postgresMajorVersion: '16'

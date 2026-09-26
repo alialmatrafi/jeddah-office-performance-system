@@ -10,7 +10,11 @@ const environmentSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4000),
   JWT_SECRET: z.string().min(16),
   JWT_EXPIRES_IN: z.string().min(1).default('8h'),
-  CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
+  CLIENT_ORIGIN: z.string().min(1).default('http://localhost:5173'),
+  SERVE_WEB: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform((value) => value === 'true'),
 });
 
 export interface AppConfig {
@@ -18,7 +22,8 @@ export interface AppConfig {
   port: number;
   jwtSecret: string;
   jwtExpiresIn: string;
-  clientOrigin: string;
+  clientOrigins: string[];
+  serveWeb: boolean;
 }
 
 let cachedConfig: AppConfig | undefined;
@@ -39,7 +44,10 @@ export function getConfig(): AppConfig {
     port: parsed.data.PORT,
     jwtSecret: parsed.data.JWT_SECRET,
     jwtExpiresIn: parsed.data.JWT_EXPIRES_IN,
-    clientOrigin: parsed.data.CLIENT_ORIGIN,
+    clientOrigins: parsed.data.CLIENT_ORIGIN.split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+    serveWeb: parsed.data.SERVE_WEB,
   };
   return cachedConfig;
 }

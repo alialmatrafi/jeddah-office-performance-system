@@ -1,4 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api';
+// In development the API runs on its own port. Production builds are served by
+// the same Express process, so requests stay on the current origin.
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api');
 const TOKEN_KEY = 'jeddah-office-token';
 
 export class ApiError extends Error {
